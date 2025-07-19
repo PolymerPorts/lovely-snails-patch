@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "eu.pb4.lovelysnailspatch.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EntityAccessor",
+    "EntityMixin",
+    "LivingEntityAccessor",
+    "LivingEntityMixin",
+    "ServerPlayerEntityMixin",
+    "mod.SnailEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
