@@ -82,7 +82,7 @@ public abstract class SnailEntityMixin extends TameableEntity {
 
     @Override
     protected void showEmoteParticle(boolean positive) {
-        if (this.getWorld() instanceof ServerWorld serverWorld) {
+        if (this.getEntityWorld() instanceof ServerWorld serverWorld) {
             ParticleEffect particleEffect = ParticleTypes.HEART;
             if (!positive) {
                 particleEffect = ParticleTypes.SMOKE;
