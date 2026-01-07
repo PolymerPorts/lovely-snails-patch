@@ -23,9 +23,9 @@
 		"lovely-snails-polymer-patch.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.16.4",
+		"fabricloader": ">=0.18.0",
 		"lovely_snails": "*",
-		"minecraft": ">=1.21.6-",
+		"minecraft": ">=1.21.11- <26.0",
 		"java": ">=21",
 		"fabric-api": "*"
 	}

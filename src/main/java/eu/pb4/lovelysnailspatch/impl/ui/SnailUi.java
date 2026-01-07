@@ -3,6 +3,8 @@ package eu.pb4.lovelysnailspatch.impl.ui;
 import dev.lambdaurora.lovely_snails.screen.SnailScreenHandler;
 import eu.pb4.lovelysnailspatch.impl.res.GuiTextures;
 import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.network.packet.s2c.play.PlaySoundFromEntityS2CPacket;
+import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
@@ -50,7 +52,7 @@ public class SnailUi extends SimpleGui {
         if (this.wrapped.hasEnderChest()) {
             this.setSlot(9 * 2 + 1, GuiTextures.ENDER_CHEST.get().hideTooltip().setCallback(() -> {
                 GuiUtils.playClickSound(player);
-                player.playSoundToPlayer(SoundEvents.BLOCK_ENDER_CHEST_OPEN, SoundCategory.UI,0.5F, this.wrapped.snail().getRandom().nextFloat() * 0.1F + 0.9F);
+                player.networkHandler.sendPacket(new PlaySoundFromEntityS2CPacket(Registries.SOUND_EVENT.getEntry(SoundEvents.BLOCK_ENDER_CHEST_OPEN), SoundCategory.UI, player, 0.5f, this.wrapped.snail().getRandom().nextFloat() * 0.1F + 0.9F, this.wrapped.snail().getRandom().nextLong()));
                 this.wrapped.snail().openEnderChestInventory(player);
             }));
         } else {

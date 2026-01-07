@@ -21,6 +21,6 @@ public class ResourcePackGenerator {
             model.generateAssets(builder::addData, atlas);
         }
 
-        builder.addData("assets/minecraft/atlases/blocks.json", atlas.build());
+        builder.addData("assets/minecraft/atlases/items.json", atlas.build());
     }
 }
