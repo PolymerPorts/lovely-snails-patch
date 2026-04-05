@@ -3,18 +3,18 @@ package eu.pb4.lovelysnailspatch.mixin.mod;
 import dev.lambdaurora.lovely_snails.entity.SnailEntity;
 import eu.pb4.lovelysnailspatch.impl.MovementHandler;
 import eu.pb4.lovelysnailspatch.mixin.EntityAccessor;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
@@ -22,12 +22,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(SnailEntity.class)
-public abstract class SnailEntityMixin extends TameableEntity {
+public abstract class SnailEntityMixin extends TamableAnimal {
     @Shadow public abstract boolean isScared();
 
     @Shadow public abstract boolean canUseSnail(Entity entity);
 
-    protected SnailEntityMixin(EntityType<? extends TameableEntity> entityType, World world) {
+    protected SnailEntityMixin(EntityType<? extends TamableAnimal> entityType, Level world) {
         super(entityType, world);
     }
 
@@ -36,36 +36,36 @@ public abstract class SnailEntityMixin extends TameableEntity {
      * @reason Replace with server side friendly logic™
      */
     @Overwrite
-    public void travel(Vec3d movementInput) {
+    public void travel(Vec3 movementInput) {
         if (this.isAlive()) {
             var passenger  = this.getControllingPassenger();
-            if (passenger instanceof LivingEntity rider && this.hasSaddleEquipped() && this.canUseSnail(passenger)) {
+            if (passenger instanceof LivingEntity rider && this.isSaddled() && this.canUseSnail(passenger)) {
                 if (this.isScared()) {
                     return;
                 }
 
-                var dirSpeed = passenger instanceof ServerPlayerEntity player
+                var dirSpeed = passenger instanceof ServerPlayer player
                         ? MovementHandler.getMovementWithAppliedFactors(player)
-                        : new Vec2f(rider.sidewaysSpeed, rider.forwardSpeed);
+                        : new Vec2(rider.xxa, rider.zza);
 
-                this.setYaw(rider.getYaw());
-                this.lastYaw = this.getYaw();
-                this.setPitch(rider.getPitch() * 0.5F);
-                this.setRotation(this.getYaw(), this.getPitch());
-                this.bodyYaw = this.getYaw();
-                this.headYaw = this.bodyYaw;
+                this.setYRot(rider.getYRot());
+                this.yRotO = this.getYRot();
+                this.setXRot(rider.getXRot() * 0.5F);
+                this.setRot(this.getYRot(), this.getXRot());
+                this.yBodyRot = this.getYRot();
+                this.yHeadRot = this.yBodyRot;
                 float sidewaysSpeed = dirSpeed.x * 0.25F;
                 float forwardSpeed = dirSpeed.y * 0.4F;
                 if (forwardSpeed <= 0.0F) {
                     forwardSpeed *= 0.25F;
                 }
 
-                if (super.isControlledByPlayer()) {
-                    this.setMovementSpeed((float) this.getAttributeValue(EntityAttributes.MOVEMENT_SPEED));
-                    super.travel(new Vec3d(sidewaysSpeed, movementInput.y, forwardSpeed));
+                if (super.isClientAuthoritative()) {
+                    this.setSpeed((float) this.getAttributeValue(Attributes.MOVEMENT_SPEED));
+                    super.travel(new Vec3(sidewaysSpeed, movementInput.y, forwardSpeed));
                 }
 
-                this.updateLimbs(false);
+                this.calculateEntityAnimation(false);
             } else {
                 super.travel(movementInput);
             }
@@ -73,17 +73,17 @@ public abstract class SnailEntityMixin extends TameableEntity {
 
     }
 
-    @Redirect(method = "handleStatus", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/World;addParticleClient(Lnet/minecraft/particle/ParticleEffect;DDDDDD)V"))
-    private void serverSideParticle(World instance, ParticleEffect parameters, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
-        if (instance instanceof ServerWorld serverWorld) {
-            serverWorld.spawnParticles(parameters, x, y, z, 0, velocityX, velocityY, velocityZ, 1);
+    @Redirect(method = "handleEntityEvent", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/Level;addParticle(Lnet/minecraft/core/particles/ParticleOptions;DDDDDD)V"))
+    private void serverSideParticle(Level instance, ParticleOptions parameters, double x, double y, double z, double velocityX, double velocityY, double velocityZ) {
+        if (instance instanceof ServerLevel serverWorld) {
+            serverWorld.sendParticles(parameters, x, y, z, 0, velocityX, velocityY, velocityZ, 1);
         }
     }
 
     @Override
-    protected void showEmoteParticle(boolean positive) {
-        if (this.getEntityWorld() instanceof ServerWorld serverWorld) {
-            ParticleEffect particleEffect = ParticleTypes.HEART;
+    protected void spawnTamingParticles(boolean positive) {
+        if (this.level() instanceof ServerLevel serverWorld) {
+            ParticleOptions particleEffect = ParticleTypes.HEART;
             if (!positive) {
                 particleEffect = ParticleTypes.SMOKE;
             }
@@ -92,13 +92,13 @@ public abstract class SnailEntityMixin extends TameableEntity {
                 double d = this.random.nextGaussian() * 0.02;
                 double e = this.random.nextGaussian() * 0.02;
                 double f = this.random.nextGaussian() * 0.02;
-                serverWorld.spawnParticles(particleEffect, this.getParticleX(1.0), this.getRandomBodyY() + 0.5, this.getParticleZ(1.0), 0, d, e, f, 1);
+                serverWorld.sendParticles(particleEffect, this.getRandomX(1.0), this.getRandomY() + 0.5, this.getRandomZ(1.0), 0, d, e, f, 1);
             }
         }
     }
 
     @Override
-    public boolean isControlledByPlayer() {
+    public boolean isClientAuthoritative() {
         return false;
     }
 }

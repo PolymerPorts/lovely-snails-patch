@@ -1,30 +1,29 @@
 package eu.pb4.lovelysnailspatch.impl.entity;
 
+import com.mojang.math.Axis;
 import dev.lambdaurora.lovely_snails.entity.SnailEntity;
 import dev.lambdaurora.lovely_snails.registry.LovelySnailsRegistry;
 import eu.pb4.factorytools.api.virtualentity.ItemDisplayElementUtil;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.EntityModelTransforms;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.poly.LeadAttachmentElement;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.poly.ModelHandle;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.poly.RideAttachmentElement;
 import eu.pb4.lovelysnailspatch.impl.entity.model.EntityModels;
-import eu.pb4.lovelysnailspatch.impl.entity.model.GenericTransforms;
 import eu.pb4.lovelysnailspatch.mixin.LivingEntityAccessor;
 import eu.pb4.polymer.virtualentity.api.ElementHolder;
 import eu.pb4.polymer.virtualentity.api.elements.InteractionElement;
 import eu.pb4.polymer.virtualentity.api.elements.ItemDisplayElement;
 import eu.pb4.polymer.virtualentity.api.elements.VirtualElement;
-import net.minecraft.client.render.OverlayTexture;
-import net.minecraft.item.ItemDisplayContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4fStack;
 
 public class SnailEntityModelHandler extends ElementHolder {
     private static final Matrix4fStack STACK = new Matrix4fStack(64);
-    private static final Vec3d OFFSET = new Vec3d(0, 0.2, 0);
+    private static final Vec3 OFFSET = new Vec3(0, 0.2, 0);
     protected final InteractionElement interaction;
     protected final LeadAttachmentElement leadAttachment = new LeadAttachmentElement();
     protected final RideAttachmentElement rideAttachment = new RideAttachmentElement();
@@ -48,11 +47,11 @@ public class SnailEntityModelHandler extends ElementHolder {
         var interaction = VirtualElement.InteractionHandler.redirect(entity);
         this.interaction = new InteractionElement(interaction);
         this.interaction.setSendPositionUpdates(false);
-        this.height = entity.getHeight();
-        this.leadAttachment.setOffset(new Vec3d(0, height / 2, 0));
+        this.height = entity.getBbHeight();
+        this.leadAttachment.setOffset(new Vec3(0, height / 2, 0));
         this.leadAttachment.setInteractionHandler(interaction);
-        this.rideAttachment.setOffset(new Vec3d(0, height, 0));
-        this.interaction.setSize(entity.getWidth(), height);
+        this.rideAttachment.setOffset(new Vec3(0, height, 0));
+        this.interaction.setSize(entity.getBbWidth(), height);
 
         for (var i = 0; i < 3; i++) {
             this.chest[i] = ItemDisplayElementUtil.createSimple();
@@ -68,7 +67,7 @@ public class SnailEntityModelHandler extends ElementHolder {
     }
 
     @Override
-    public boolean startWatching(ServerPlayNetworkHandler player) {
+    public boolean startWatching(ServerGamePacketListenerImpl player) {
         if (noTick) {
             onTick();
         }
@@ -80,18 +79,18 @@ public class SnailEntityModelHandler extends ElementHolder {
         noTick = false;
 
         this.rideAttachment.setMaxHealth(this.entity.getMaxHealth());
-        this.rideAttachment.getDataTracker().set(LivingEntityAccessor.getHEALTH(), this.entity.getHealth());
+        this.rideAttachment.getSyncedData().set(LivingEntityAccessor.getDATA_HEALTH_ID(), this.entity.getHealth());
         this.interaction.setCustomName(this.entity.getCustomName());
         this.interaction.setCustomNameVisible(this.entity.isCustomNameVisible());
-        this.rideAttachment.setYaw(entity.getYaw());
-        if (entity.getHeight() != this.height) {
-            this.height = entity.getHeight();
-            this.interaction.setSize(entity.getWidth(), this.height);
-            this.leadAttachment.setOffset(new Vec3d(0, this.height / 2, 0));
-            this.rideAttachment.setOffset(new Vec3d(0, this.height, 0));
+        this.rideAttachment.setYaw(entity.getYRot());
+        if (entity.getBbHeight() != this.height) {
+            this.height = entity.getBbHeight();
+            this.interaction.setSize(entity.getBbWidth(), this.height);
+            this.leadAttachment.setOffset(new Vec3(0, this.height / 2, 0));
+            this.rideAttachment.setOffset(new Vec3(0, this.height, 0));
         }
 
-        var saddle = this.entity.hasSaddleEquipped();
+        var saddle = this.entity.isSaddled();
         if (hasSaddle != saddle) {
             hasSaddle = saddle;
             this.saddle.setHidden(!saddle, this.entity.getType().getDimensions());
@@ -110,7 +109,7 @@ public class SnailEntityModelHandler extends ElementHolder {
         STACK.pushMatrix();
 
         STACK.translate(0.0F, -0.2f, 0.0F);
-        GenericTransforms.livingEntityTransform(this.entity, STACK);
+        EntityModelTransforms.livingEntityTransform(this.entity, STACK);
 
         this.main.update(this.entity, STACK);
         if (hasSaddle) {
@@ -120,16 +119,16 @@ public class SnailEntityModelHandler extends ElementHolder {
             this.decor.update(this.entity, STACK);
         }
 
-        float shellRotation = EntityModels.SNAIL.model().getCurrentModel(this.entity).getShell().pitch;
+        float shellRotation = EntityModels.SNAIL.model().getCurrentModel(this.entity).getShell().xRot;
         var rightChest = entity.getChest(0);
         if (!rightChest.isEmpty()) {
             STACK.pushMatrix();
-            STACK.rotate(RotationAxis.POSITIVE_X.rotationDegrees(180.0F));
-            STACK.rotate(RotationAxis.POSITIVE_X.rotation(shellRotation));
-            STACK.rotate(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
+            STACK.rotate(Axis.XP.rotationDegrees(180.0F));
+            STACK.rotate(Axis.XP.rotation(shellRotation));
+            STACK.rotate(Axis.YP.rotationDegrees(90.0F));
             STACK.translate(0.65f, 0.2f, -0.505f);
             STACK.scale(1.25F, 1.25F, 1.25F);
-            STACK.rotateY(MathHelper.PI);
+            STACK.rotateY(Mth.PI);
             this.chest[0].setTransformation(STACK);
             this.chest[0].startInterpolationIfDirty();
             this.chest[0].setItem(rightChest);
@@ -142,11 +141,11 @@ public class SnailEntityModelHandler extends ElementHolder {
         var backChest = entity.getChest(1);
         if (!backChest.isEmpty()) {
             STACK.pushMatrix();
-            STACK.rotate(RotationAxis.POSITIVE_X.rotationDegrees(180.0F));
-            STACK.rotate(RotationAxis.POSITIVE_X.rotation(shellRotation));
+            STACK.rotate(Axis.XP.rotationDegrees(180.0F));
+            STACK.rotate(Axis.XP.rotation(shellRotation));
             STACK.translate(0.0f, 0.2f, -0.94f);
             STACK.scale(1.25F, 1.25F, 1.25F);
-            STACK.rotateY(MathHelper.PI);
+            STACK.rotateY(Mth.PI);
             this.chest[1].setTransformation(STACK);
             this.chest[1].startInterpolationIfDirty();
             this.chest[1].setItem(backChest);
@@ -159,12 +158,12 @@ public class SnailEntityModelHandler extends ElementHolder {
         var leftChest = entity.getChest(2);
         if (!leftChest.isEmpty()) {
             STACK.pushMatrix();
-            STACK.rotate(RotationAxis.POSITIVE_X.rotationDegrees(180.0F));
-            STACK.rotate(RotationAxis.POSITIVE_X.rotation(shellRotation));
-            STACK.rotate(RotationAxis.NEGATIVE_Y.rotationDegrees(90.0F));
+            STACK.rotate(Axis.XP.rotationDegrees(180.0F));
+            STACK.rotate(Axis.XP.rotation(shellRotation));
+            STACK.rotate(Axis.YN.rotationDegrees(90.0F));
             STACK.translate(-0.65f, 0.2f, -0.505f);
             STACK.scale(1.25F, 1.25F, 1.25F);
-            STACK.rotateY(MathHelper.PI);
+            STACK.rotateY(Mth.PI);
             this.chest[2].setTransformation(STACK);
             this.chest[2].startInterpolationIfDirty();
             this.chest[2].setItem(leftChest);

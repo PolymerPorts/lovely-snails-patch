@@ -18,11 +18,11 @@
 package eu.pb4.lovelysnailspatch.impl.entity.model;
 
 import dev.lambdaurora.lovely_snails.entity.SnailEntity;
-import eu.pb4.lovelysnailspatch.impl.entity.model.emuvanilla.CubeConsumer;
-import eu.pb4.lovelysnailspatch.impl.entity.model.emuvanilla.model.*;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.CubeConsumer;
+import eu.pb4.factorytools.api.virtualentity.emuvanilla.model.*;
 import org.joml.Matrix4fStack;
 
-import static eu.pb4.lovelysnailspatch.impl.entity.model.emuvanilla.model.EntityModelPartNames.*;
+import static eu.pb4.factorytools.api.virtualentity.emuvanilla.model.PartNames.*;
 
 
 /**
@@ -59,76 +59,76 @@ public class SnailModel extends EntityModel<SnailEntity> {
 		this.babyModel = new Model(root.getChild("baby"), BABY_SHELL_ROTATION);
 	}
 
-	public static TexturedModelData model(Dilation dilation) {
-		var modelData = new ModelData();
+	public static LayerDefinition model(CubeDeformation dilation) {
+		var modelData = new MeshDefinition();
 		var root = modelData.getRoot();
-		buildAdultModel(root.addChild("adult", new ModelPartBuilder(), ModelTransform.NONE), dilation);
-		buildBabyModel(root.addChild("baby", new ModelPartBuilder(), ModelTransform.NONE), dilation);
-		return TexturedModelData.of(modelData, 128, 96);
+		buildAdultModel(root.addOrReplaceChild("adult", new CubeListBuilder(), PartPose.ZERO), dilation);
+		buildBabyModel(root.addOrReplaceChild("baby", new CubeListBuilder(), PartPose.ZERO), dilation);
+		return LayerDefinition.create(modelData, 128, 96);
 	}
 
-	private static void buildAdultModel(ModelPartData root, Dilation dilation) {
-		var body = root.addChild(BODY, new ModelPartBuilder()
-						.uv(0, 32)
-						.cuboid(-(ADULT_FRONT_WIDTH / 2.f), 5.f, -20.f, ADULT_FRONT_WIDTH, 3.f, 40.f, dilation),
-				ModelTransform.origin(0.f, 16.f, -2.f));
-		var upperBody = body.addChild("upper_body", new ModelPartBuilder()
-						.uv(64, 16)
-						.cuboid(-(ADULT_FRONT_WIDTH / 2.f), -7.f, 0.f, ADULT_FRONT_WIDTH, 12.f, 8.f,
+	private static void buildAdultModel(PartDefinition root, CubeDeformation dilation) {
+		var body = root.addOrReplaceChild(BODY, new CubeListBuilder()
+						.texOffs(0, 32)
+						.addBox(-(ADULT_FRONT_WIDTH / 2.f), 5.f, -20.f, ADULT_FRONT_WIDTH, 3.f, 40.f, dilation),
+				PartPose.offset(0.f, 16.f, -2.f));
+		var upperBody = body.addOrReplaceChild("upper_body", new CubeListBuilder()
+						.texOffs(64, 16)
+						.addBox(-(ADULT_FRONT_WIDTH / 2.f), -7.f, 0.f, ADULT_FRONT_WIDTH, 12.f, 8.f,
 								dilation),
-				ModelTransform.origin(0.f, 0.f, -20.f));
-		upperBody.addChild("left_tentacle", new ModelPartBuilder()
-						.uv(0, 2)
-						.cuboid(-ADULT_FRONT_WIDTH / 2.f, 0.f, -2.f, 4.f, 4.f, 2.f, dilation),
-				ModelTransform.NONE
+				PartPose.offset(0.f, 0.f, -20.f));
+		upperBody.addOrReplaceChild("left_tentacle", new CubeListBuilder()
+						.texOffs(0, 2)
+						.addBox(-ADULT_FRONT_WIDTH / 2.f, 0.f, -2.f, 4.f, 4.f, 2.f, dilation),
+				PartPose.ZERO
 		);
-		upperBody.addChild("right_tentacle", new ModelPartBuilder()
-						.uv(0, 2)
-						.mirrored()
-						.cuboid(ADULT_FRONT_WIDTH / 2.f - 4.f, 0.f, -2.f, 4.f, 4.f, 2.f, dilation),
-				ModelTransform.NONE
+		upperBody.addOrReplaceChild("right_tentacle", new CubeListBuilder()
+						.texOffs(0, 2)
+						.mirror()
+						.addBox(ADULT_FRONT_WIDTH / 2.f - 4.f, 0.f, -2.f, 4.f, 4.f, 2.f, dilation),
+				PartPose.ZERO
 		);
 
-		root.addChild(SHELL, new ModelPartBuilder()
-						.cuboid(-(ADULT_FRONT_WIDTH / 2.f), 0.f, -2.f, ADULT_FRONT_WIDTH, ADULT_SHELL_DIAMETER, ADULT_SHELL_DIAMETER,
-								dilation.add(4.f, 8.f, 8.f),
+		root.addOrReplaceChild(SHELL, new CubeListBuilder()
+						.addBox(-(ADULT_FRONT_WIDTH / 2.f), 0.f, -2.f, ADULT_FRONT_WIDTH, ADULT_SHELL_DIAMETER, ADULT_SHELL_DIAMETER,
+								dilation.extend(4.f, 8.f, 8.f),
 								1.f, 1.f),
-				ModelTransform.of(0.f, -2.f, -5.f, ADULT_SHELL_ROTATION, 0.f, 0.f));
+				PartPose.offsetAndRotation(0.f, -2.f, -5.f, ADULT_SHELL_ROTATION, 0.f, 0.f));
 
-		body.addChild(LEFT_EYE, new ModelPartBuilder()
-						.uv(42, 0)
-						.cuboid(-2.8336f, -15.849f, -3.8272f, ADULT_EYE_DIAMETER, ADULT_EYE_LENGTH, ADULT_EYE_DIAMETER, dilation),
-				ModelTransform.of(-1.5f, -4.f, -15f, 0.4363f, ADULT_EYE_YAW, 0.f));
-		body.addChild(RIGHT_EYE, new ModelPartBuilder()
-						.uv(42, 0)
-						.mirrored()
-						.cuboid(0.8336f, -15.849f, -3.8272f, ADULT_EYE_DIAMETER, ADULT_EYE_LENGTH, ADULT_EYE_DIAMETER, dilation),
-				ModelTransform.of(1.5f, -4.f, -15f, 0.4363f, -ADULT_EYE_YAW, 0.f));
+		body.addOrReplaceChild(LEFT_EYE, new CubeListBuilder()
+						.texOffs(42, 0)
+						.addBox(-2.8336f, -15.849f, -3.8272f, ADULT_EYE_DIAMETER, ADULT_EYE_LENGTH, ADULT_EYE_DIAMETER, dilation),
+				PartPose.offsetAndRotation(-1.5f, -4.f, -15f, 0.4363f, ADULT_EYE_YAW, 0.f));
+		body.addOrReplaceChild(RIGHT_EYE, new CubeListBuilder()
+						.texOffs(42, 0)
+						.mirror()
+						.addBox(0.8336f, -15.849f, -3.8272f, ADULT_EYE_DIAMETER, ADULT_EYE_LENGTH, ADULT_EYE_DIAMETER, dilation),
+				PartPose.offsetAndRotation(1.5f, -4.f, -15f, 0.4363f, -ADULT_EYE_YAW, 0.f));
 	}
 
-	private static void buildBabyModel(ModelPartData babyRoot, Dilation dilation) {
-		var body = babyRoot.addChild(BODY, new ModelPartBuilder()
-						.uv(56, 0)
-						.cuboid(-(BABY_FRONT_WIDTH / 2.f), 22.f, -7.f, BABY_FRONT_WIDTH, 2.f, 14.f, dilation)
-						.uv(0, 10)
-						.cuboid(-(BABY_FRONT_WIDTH / 2.f), 20.f, -7.f, BABY_FRONT_WIDTH, 2.f, 4.f, dilation)
-						.uv(0, 0)
-						.cuboid(-(BABY_FRONT_WIDTH / 2.f), 22.f, -8.f, 1.f, 1.f, 1.f, dilation)
-						.cuboid(BABY_FRONT_WIDTH / 2.f - 1.f, 22.f, -8.f, 1.f, 1.f, 1.f, dilation),
-				ModelTransform.origin(0, 0, -2.f));
-		babyRoot.addChild(SHELL, new ModelPartBuilder()
-						.uv(0, 32)
-						.cuboid(-3.f, 10.f, -1.f, 6.f, BABY_SHELL_DIAMETER, BABY_SHELL_DIAMETER, dilation),
-				ModelTransform.of(0.f, 2.2f, -3.f, BABY_SHELL_ROTATION, 0.f, 0.f));
-		body.addChild(LEFT_EYE, new ModelPartBuilder()
-						.uv(0, 32)
-						.cuboid(-1.1664f, 19.f, -3.8272f, BABY_EYE_DIAMETER, BABY_EYE_LENGTH, BABY_EYE_DIAMETER, dilation),
-				ModelTransform.of(-1.5f, -4.f, -14.2f, 0.4363f, BABY_EYE_YAW, 0.f));
-		body.addChild(RIGHT_EYE, new ModelPartBuilder()
-						.uv(0, 32)
-						.mirrored()
-						.cuboid(0.1664f, 19.f, -3.8272f, BABY_EYE_DIAMETER, BABY_EYE_LENGTH, BABY_EYE_DIAMETER, dilation),
-				ModelTransform.of(1.5f, -4.f, -14.2f, 0.4363f, -BABY_EYE_YAW, 0.f));
+	private static void buildBabyModel(PartDefinition babyRoot, CubeDeformation dilation) {
+		var body = babyRoot.addOrReplaceChild(BODY, new CubeListBuilder()
+						.texOffs(56, 0)
+						.addBox(-(BABY_FRONT_WIDTH / 2.f), 22.f, -7.f, BABY_FRONT_WIDTH, 2.f, 14.f, dilation)
+						.texOffs(0, 10)
+						.addBox(-(BABY_FRONT_WIDTH / 2.f), 20.f, -7.f, BABY_FRONT_WIDTH, 2.f, 4.f, dilation)
+						.texOffs(0, 0)
+						.addBox(-(BABY_FRONT_WIDTH / 2.f), 22.f, -8.f, 1.f, 1.f, 1.f, dilation)
+						.addBox(BABY_FRONT_WIDTH / 2.f - 1.f, 22.f, -8.f, 1.f, 1.f, 1.f, dilation),
+				PartPose.offset(0, 0, -2.f));
+		babyRoot.addOrReplaceChild(SHELL, new CubeListBuilder()
+						.texOffs(0, 32)
+						.addBox(-3.f, 10.f, -1.f, 6.f, BABY_SHELL_DIAMETER, BABY_SHELL_DIAMETER, dilation),
+				PartPose.offsetAndRotation(0.f, 2.2f, -3.f, BABY_SHELL_ROTATION, 0.f, 0.f));
+		body.addOrReplaceChild(LEFT_EYE, new CubeListBuilder()
+						.texOffs(0, 32)
+						.addBox(-1.1664f, 19.f, -3.8272f, BABY_EYE_DIAMETER, BABY_EYE_LENGTH, BABY_EYE_DIAMETER, dilation),
+				PartPose.offsetAndRotation(-1.5f, -4.f, -14.2f, 0.4363f, BABY_EYE_YAW, 0.f));
+		body.addOrReplaceChild(RIGHT_EYE, new CubeListBuilder()
+						.texOffs(0, 32)
+						.mirror()
+						.addBox(0.1664f, 19.f, -3.8272f, BABY_EYE_DIAMETER, BABY_EYE_LENGTH, BABY_EYE_DIAMETER, dilation),
+				PartPose.offsetAndRotation(1.5f, -4.f, -14.2f, 0.4363f, -BABY_EYE_YAW, 0.f));
 	}
 
 	public Model getCurrentModel(SnailEntity entity) {
@@ -136,7 +136,7 @@ public class SnailModel extends EntityModel<SnailEntity> {
 	}
 
 	@Override
-	public void setAngles(SnailEntity entity) {
+	public void setupAnim(SnailEntity entity) {
 		var model = this.getCurrentModel(entity);
 		this.currentModel = model;
 		model.root.visible = true;
@@ -181,7 +181,7 @@ public class SnailModel extends EntityModel<SnailEntity> {
 		 */
 		public void hideSnail() {
 			this.body.visible = false;
-			this.getShell().setAngles(0.f, 0.f, 0.f);
+			this.getShell().setRotation(0.f, 0.f, 0.f);
 		}
 
 		/**
@@ -189,7 +189,7 @@ public class SnailModel extends EntityModel<SnailEntity> {
 		 */
 		public void uncover() {
 			this.body.visible = true;
-			this.getShell().setAngles(this.idleShellYaw, 0.f, 0.f);
+			this.getShell().setRotation(this.idleShellYaw, 0.f, 0.f);
 		}
 
 		public void render(Matrix4fStack matrices, CubeConsumer vertices) {
